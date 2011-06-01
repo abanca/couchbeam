@@ -18,29 +18,29 @@
 -author('Benoît Chesneau <benoitc@e-engura.org>').
 -include("couchbeam.hrl").
 
--export([set_value/3, get_value/2, get_value/3, 
+-export([set_value/3, get_value/2, get_value/3,
          delete_value/2, extend/2, extend/3,
-         add_attachment/3, add_attachment/4, 
+         add_attachment/3, add_attachment/4,
          delete_inline_attachment/2]).
--export([get_id/1, get_rev/1, get_idrev/1, is_saved/1]).        
+-export([get_id/1, get_rev/1, get_idrev/1, is_saved/1]).
 
 %% @spec get_id(Doc::json_obj()) -> binary()
-%% @doc get document id. 
+%% @doc get document id.
 get_id(Doc) ->
     get_value(<<"_id">>, Doc).
-    
+
 %% @spec get_rev(Doc::json_obj()) -> binary()
-%% @doc get document revision.    
+%% @doc get document revision.
 get_rev(Doc) ->
     get_value(<<"_rev">>, Doc).
 
 %% @spec get_idrev(Doc::json_obj()) -> {DocId, DocRev}
-%% @doc get  a tuple containing docucment id and revision.    
+%% @doc get  a tuple containing docucment id and revision.
 get_idrev(Doc) ->
     DocId = get_value(<<"_id">>, Doc),
     DocRev = get_value(<<"_rev">>, Doc),
     {DocId, DocRev}.
-    
+
 %% @spec is_saved(Doc::json_obj()) -> boolean()
 %% @doc If document have been saved (revision is defined) return true,
 %% else, return false.
@@ -60,7 +60,7 @@ set_value(Key, Value, JsonObj) when is_binary(Key) ->
         true -> set_value1(Props, Key, Value, []);
         false-> {lists:reverse([{Key, Value}|lists:reverse(Props)])}
     end.
-    
+
 %% @spec get_value(Key::key_val(), JsonObj::json_obj()) -> term()
 %% @type key_val() = lis() | binary()
 %% @doc Returns the value of a simple key/value property in json object
@@ -70,7 +70,6 @@ get_value(Key, JsonObj) ->
 
 
 %% @spec get_value(Key::key_val(), JsonObj::json_obj(), Default::term()) -> term()
-%% @type key_val() = lis() | binary()
 %% @doc Returns the value of a simple key/value property in json object
 %% function from erlang_couchdb
 get_value(Key, JsonObj, Default) when is_list(Key) ->
@@ -80,22 +79,21 @@ get_value(Key, JsonObj, Default) when is_binary(Key) ->
     proplists:get_value(Key, Props, Default).
 
 %% @spec delete_value(Key::key_val(), JsonObj::json_obj()) -> json_obj()
-%% @type key_val() = list() | binary()
-%% @doc Deletes all entries associated with Key in json object.  
+%% @doc Deletes all entries associated with Key in json object.
 delete_value(Key, JsonObj) when is_list(Key) ->
     delete_value(list_to_binary(Key), JsonObj);
 delete_value(Key, JsonObj) when is_binary(Key) ->
     {Props} = JsonObj,
     Props1 = proplists:delete(Key, Props),
     {Props1}.
-       
+
 %% @spec extend(Key::binary(), Value::json_term(), JsonObj::json_obj()) -> json_obj()
-%% @doc extend a jsonobject by key, value 
+%% @doc extend a jsonobject by key, value
 extend(Key, Value, JsonObj) ->
     extend({Key, Value}, JsonObj).
 
 %% @spec extend(Prop::property(), JsonObj::json_obj()) -> json_obj()
-%% @type property() = json_obj() | tuple()  
+%% @type property() = json_obj() | tuple()
 %% @doc extend a jsonobject by a property or list of property
 extend([], JsonObj) ->
     JsonObj;
@@ -105,7 +103,7 @@ extend([Prop|R], JsonObj)->
 extend({Key, Value}, JsonObj) ->
     set_value(Key, Value, JsonObj).
 
-%% @spec add_attachment(Doc::json_obj(),Content::attachment_content(), 
+%% @spec add_attachment(Doc::json_obj(),Content::attachment_content(),
 %%      AName::string()) -> json_obj()
 %% @doc add attachment  to a doc and encode it. Give possibility to send attachments inline.
 add_attachment(Doc, Content, AName) ->
@@ -114,15 +112,15 @@ add_attachment(Doc, Content, AName) ->
 
 %% @spec add_attachment(Doc::json_obj(), Content::attachment_content(),
 %%      AName::string(), ContentType::string()) -> json_obj()
-%% @doc add attachment  to a doc and encode it with ContentType fixed.    
+%% @doc add attachment  to a doc and encode it with ContentType fixed.
 add_attachment(Doc, Content, AName, ContentType) ->
     {Props} = Doc,
     Data = couchbeam_util:encodeBase64(Content),
-    Attachment = {list_to_binary(AName), {[{<<"content-type">>, 
+    Attachment = {list_to_binary(AName), {[{<<"content-type">>,
         list_to_binary(ContentType)}, {<<"data">>, Data}]}},
-    
+
     Attachments1 = case proplists:get_value(<<"_attachments">>, Props) of
-        undefined -> 
+        undefined ->
             [Attachment];
         {Attachments} ->
             case set_attachment(Attachments, [], Attachment) of
@@ -133,7 +131,7 @@ add_attachment(Doc, Content, AName, ContentType) ->
                 end
         end,
     set_value(<<"_attachments">>, {Attachments1}, Doc).
-    
+
 %% @spec delete_inline_attachment(Doc::json_obj(), AName::string()) -> json_obj()
 %% @doc delete an attachment record in doc. This is different from delete_attachment
 %%      change is only applied in Doc object. Save_doc should be save to save changes.
@@ -153,7 +151,7 @@ delete_inline_attachment(Doc, AName) when is_binary(AName) ->
                     set_value(<<"_attachments">>, {Attachments1}, Doc)
                 end
         end.
- 
+
 
 %% @private
 set_value1([], _Key, _Value, Acc) ->
@@ -166,7 +164,7 @@ set_value1([{K, V}|T], Key, Value, Acc) ->
             [{K, V}|Acc]
         end,
     set_value1(T, Key, Value, Acc1).
-    
+
 %% @private
 set_attachment(Attachments, NewAttachments, Attachment) ->
     set_attachment(Attachments, NewAttachments, Attachment, false).
